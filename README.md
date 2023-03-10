@@ -5,9 +5,13 @@ Sometimes these playlists change. This script syncs local files. Deleting locall
 
 Modified to sync all playlist based the Youtube channel id.
 
-## usage
+## .env file
 
-Change the constants in the index.js file. Then, run the following command:
+  * API_KEY
+  * CHANNEL_ID
+  * ROOT_MUSIC_PATH 
+  
+## usage
 
 `npm start`
 
