@@ -10,6 +10,8 @@ Modified to sync all playlist based the Youtube channel id.
   * API_KEY
   * CHANNEL_ID
   * ROOT_MUSIC_PATH 
+  * MAX_PLAYLIST_RESULT (max number of playlist)
+  * MAX_PLAYLIST_ITEMS_RESULT (max number of songs)
   
 ## usage
 

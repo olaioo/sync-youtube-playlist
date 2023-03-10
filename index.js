@@ -167,7 +167,7 @@ const mkdirp = require('mkdirp').sync;
     youtube.playlists.list({
         part: 'snippet,contentDetails',
         pageToken: null,
-        maxResults: 2,
+        maxResults: process.env.MAX_PLAYLIST_RESULT,
         channelId: process.env.CHANNEL_ID
     },
     (err, result) => {
@@ -192,7 +192,7 @@ const mkdirp = require('mkdirp').sync;
     youtube.playlistItems.list({
         part: 'snippet',
         pageToken: pgToken,
-        maxResults: 50,
+        maxResults: process.env.MAX_PLAYLIST_ITEMS_RESULT,
         playlistId: playlist.id
     },
     (err, result) => {
