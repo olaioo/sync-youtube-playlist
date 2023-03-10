@@ -7,6 +7,7 @@
  * all songs that do no have a local mp3 will be downloaded.
  *
  */
+require('dotenv').config();
 const script = require('commander');
 const process = require('process');
 const fs = require('fs');
@@ -20,28 +21,26 @@ const mkdirp = require('mkdirp').sync;
 // script
 (function() {
   // args
-  var mp3Dir, playlistId = '';
+  //var mp3Dir, playlistId = '';
   var files = [];
   var songs = [];
   var deleteQueue = [];
   var downloadQueue = [];
 
   // authenticate youtube api
-  youtube.authenticate({type: 'key', key:'AIzaSyDkXcuOas9q8N3LAuhBSa5XHGTmEJhSoCY'});
+  youtube.authenticate({type: 'key', key: process.env.API_KEY});
 
   /**
-   * parseARgs
+   * clearVars
    *
-   * get dir & url
+   * clear the vars
+   *
    */
-  function parseArgs() {
-    script.arguments('<dir> <url>')
-      .action(function (dir, playlistUrl) {
-        // set vars
-        mp3Dir = dir;
-        playlistId = url.parse(playlistUrl, true).query.list;
-      })
-      .parse(process.argv);
+  function clearVars() {
+    files = [];
+    songs = [];
+    deleteQueue = [];
+    downloadQueue = [];
   }
 
   /**
@@ -50,16 +49,14 @@ const mkdirp = require('mkdirp').sync;
    * read contents of mp3Dir
    *
    */
-  function readDir() {
-    fs.readdir(mp3Dir, (err, result) => {
-      if (err) {
-        console.log(err);
-        console.log(chalk.red('Cannot read mp3 file names.'));
-      } else {
-        result.forEach((file) => { files.push(file); });
-      }
-    });
-
+  function readDir(mp3Dir) {
+    try {
+      fileObjs = fs.readdirSync(mp3Dir, { withFileTypes: true });
+      fileObjs.forEach((file) => { files.push(file.name); });
+    } catch (err) {
+      console.log(err);
+      console.log(chalk.red('Cannot read mp3 file names.'));
+    }
   }
 
   /**
@@ -92,7 +89,7 @@ const mkdirp = require('mkdirp').sync;
    * mp3Dir is exists, can r&w,
    *
    */
-  function validateArgs() {
+  function validateArgs(mp3Dir, playlistId) {
     // check mp3 dir exists
     if (!fs.existsSync(mp3Dir)) {
       mkdirp(mp3Dir, (err) => {
@@ -155,13 +152,34 @@ const mkdirp = require('mkdirp').sync;
    * validate.
    *
    */
-  function getArgs() {
-    // attempt to parse and validate args if they are empty
-    if (mp3Dir === '' || playlistId === '') {
-      parseArgs();
-      readDir();
-      validateArgs();
-    }
+  function getArgs(mp3Dir, playlistId) {
+    readDir(mp3Dir);
+    validateArgs(mp3Dir, playlistId);
+  }
+
+  /**
+   * getPlaylist
+   *
+   * get each playlist from the channel
+   *
+   */
+  function getPlaylist() {
+    youtube.playlists.list({
+        part: 'snippet,contentDetails',
+        pageToken: null,
+        maxResults: 2,
+        channelId: process.env.CHANNEL_ID
+    },
+    (err, result) => {
+      if (err) {
+        console.log(err);
+        console.log(chalk.red('Cannot get playlist info, check channel id.'));
+      } else {
+        result.items.forEach((playlist) => {
+          getPlaylistItems(null, playlist);
+        });
+      }
+    });
   }
 
   /**
@@ -170,12 +188,12 @@ const mkdirp = require('mkdirp').sync;
    * get each item in a playlist
    *
    */
-  function getPlaylistItems(pgToken) {
+  function getPlaylistItems(pgToken, playlist) {
     youtube.playlistItems.list({
         part: 'snippet',
         pageToken: pgToken,
         maxResults: 50,
-        playlistId: playlistId
+        playlistId: playlist.id
     },
     (err, result) => {
       // check for error in request
@@ -183,6 +201,8 @@ const mkdirp = require('mkdirp').sync;
         console.log(err);
         console.log(chalk.red('Cannot get playlist items, check playlist url.'));
       } else {
+        let path = process.env.ROOT_MUSIC_PATH + playlist.snippet.title;
+        getArgs(path, playlist.id);
         // save items
         result.items.forEach((item) => {
           songs.push(item.snippet);
@@ -191,8 +211,9 @@ const mkdirp = require('mkdirp').sync;
         if (result.nextPageToken) {
           getPlaylistItems(result.nextPageToken);
         } else {
-          getSongsToDelete();
-          getSongsToDownload();
+          getSongsToDelete(path);
+          getSongsToDownload(path);
+          clearVars();
         }
       }
     });
@@ -204,7 +225,7 @@ const mkdirp = require('mkdirp').sync;
    * find all song ids which exist in the playlist, but
    * do not exist in the mp3 dir
    */
-  function getSongsToDownload() {
+  function getSongsToDownload(mp3Dir) {
     // traverse songs in playlist
     songs.forEach((song) => {
       // check if id of song exists in mp3 directory
@@ -216,7 +237,7 @@ const mkdirp = require('mkdirp').sync;
       }
     });
 
-    processDownloadQueue();
+    processDownloadQueue(mp3Dir);
   }
 
   /**
@@ -225,7 +246,7 @@ const mkdirp = require('mkdirp').sync;
    * get all songs which exist as an mp3 but do not exist in the playlist.
    *
    */
-  function getSongsToDelete() {
+  function getSongsToDelete(mp3Dir) {
     const playlistIds = songs.map((song) => { return song.resourceId.videoId; });
     getMp3YoutubeIdsFromFileName()
       .forEach((mp3Id) => {
@@ -242,7 +263,7 @@ const mkdirp = require('mkdirp').sync;
    *
    * process deleteQueue
    */
-  function processDeleteQueue() {
+  function processDeleteQueue(mp3Dir) {
     deleteQueue.forEach((id) => {
       const matches = files.filter((file) => { return file.includes(id); });
       if (matches.length === 1) {
@@ -263,7 +284,7 @@ const mkdirp = require('mkdirp').sync;
    *
    * process download queue
    */
-  function processDownloadQueue() {
+  function processDownloadQueue(mp3Dir) {
     downloadQueue.forEach((song) => {
       // download song
       const path = mp3Dir.endsWith('/') ? mp3Dir : mp3Dir + '/';
@@ -284,7 +305,6 @@ const mkdirp = require('mkdirp').sync;
   }
 
   // script process
-  getArgs();
-  getPlaylistItems(null);
+  getPlaylist();
 
 })();

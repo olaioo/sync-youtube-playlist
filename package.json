@@ -1,15 +1,10 @@
 {
   "name": "sync-youtube-playlist",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "sync youtube playlist using youtube-dl",
   "main": "index.js",
   "scripts": {
-    "somethingelse": "./index.js ~/Music/youtube/somethingelse/ https://www.youtube.com/playlist?list=PLnGgRYDndyEREz4liQG8MHohkeTLgDnzE",
-    "bobyourhead": "./index.js ~/Music/youtube/bobyourhead/ https://www.youtube.com/playlist?list=PLnGgRYDndyESIpDt-193D1tqD8zVqcImq",
-    "horns": "./index.js ~/Music/youtube/horns/ https://www.youtube.com/playlist?list=PLnGgRYDndyESdUDoTpOOeraNz_Yry-5Wr",
-    "blues": "./index.js ~/Music/youtube/blues/ https://www.youtube.com/playlist?list=PLnGgRYDndyETxb5oLIrFpjzEhLtRrNrCP",
-    "punk": "./index.js ~/Music/youtube/punk/ https://www.youtube.com/playlist?list=PLnGgRYDndyERsY4PXLuVsG8OMb_KXYwMz",
-    "p.s.": "./index.js ~/Music/youtube/p.s./ https://www.youtube.com/playlist?list=PLnGgRYDndyEQ7ThUeov6vjM_9QcrFidBV"
+    "start": "./index.js"
   },
   "keywords": [
     "node",
@@ -23,6 +18,7 @@
     "commander": "^2.9.0",
     "mkdirp": "^0.5.1",
     "string-similarity": "^1.1.0",
-    "youtube-api": "^2.0.6"
+    "youtube-api": "^2.0.6",
+    "dotenv": "^16.0.3"
   }
 }
